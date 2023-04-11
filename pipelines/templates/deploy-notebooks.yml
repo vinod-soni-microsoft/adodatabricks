@@ -1,0 +1,53 @@
+#
+# Template that deploys a folder with Databricks notebooks to a Databricks workspace.
+#
+
+parameters:
+  - name: databricksWorkspaceUrl
+    displayName: 'Azure Databricks Workspace Url'
+    type: string
+
+  - name: accessToken
+    displayName: 'Azure AD Access Token'
+    type: string
+
+  - name: notebooksSourceLocation
+    displayName: 'Location of notebooks to be deployed'
+    type: string
+
+  - name: notebooksWorkspaceFolder
+    displayName: 'Databricks notebooks folder'
+    type: string
+
+
+steps:
+  - task: UsePythonVersion@0
+    displayName: 'Use Python 3.x'
+    inputs:
+      versionSpec: '3.x'
+      addToPath: true
+      architecture: 'x64'
+
+  - task: Bash@3
+    displayName: 'Install the databricks-cli'
+    inputs:
+      targetType: 'inline'
+      script: |
+        _pip="$(command -v pip || command -v pip3)"
+        ${_pip} install databricks-cli
+
+  - task: Bash@3
+    displayName: 'Deploy notebooks to workspace'
+    inputs:
+      targetType: 'inline'
+      script: |
+        export LC_ALL=C.UTF-8
+        export LANG=C.UTF-8
+        _command="databricks workspace import_dir -o -e ${NOTEBOOKS_SRC} ${NOTEBOOKS_DEST}"
+        echo "Running: \'${_command}\'"
+        ${_command}
+    env:
+      DATABRICKS_HOST: ${{ parameters.databricksWorkspaceUrl }}
+      DATABRICKS_TOKEN: ${{ parameters.accessToken }}
+      NOTEBOOKS_SRC: ${{ parameters.notebooksSourceLocation }}
+      NOTEBOOKS_DEST: ${{ parameters.notebooksWorkspaceFolder }}
